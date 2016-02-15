@@ -19,7 +19,7 @@ where the time is UTC. HH is in 24 hour format
 
 # Usage
 
-## scrape-fto.py
+## scrape_fto.py
 
     ./scrape-fto.py 
 
