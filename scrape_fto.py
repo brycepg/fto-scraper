@@ -22,7 +22,7 @@ def get_page_soup(url):
     """Get html from url, parse it into beautiful soup data structure"""
     page = requests.get(url)
     c = page.content
-    soup = BeautifulSoup(c, "html5lib")
+    soup = BeautifulSoup(c, "html.parser")
     return soup
 
 def get_population(soup):
