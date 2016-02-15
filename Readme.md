@@ -25,7 +25,7 @@ where the time is UTC. HH is in 24 hour format
 
 Queries fto and echos the formatted string 
 
-## append-csv.sh
+## append_csv.sh
 
 Calls the above python script and appends the output
 to a csv and creats headers if emtpy. 
@@ -34,13 +34,14 @@ the output csv should be accessable via http
 
 e.g.
 
-        ./append-csv.sh output.csv
+        ./append_csv.sh output.csv
 
 
 A crontab entry might look like
 
-        0 0,12 * * * /dir/append-csv.sh /var/www/fto-stats.csv
+        0 0,12 * * * /dir/append_csv.sh /var/www/fto-stats.csv
 
+where dir is the directory for `append_csv.sh` AND `scrape_fto.py` 
 To run the script twich per day at 12AM / 12PM
 
 ### Output
