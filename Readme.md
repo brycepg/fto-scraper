@@ -41,8 +41,8 @@ A crontab entry might look like
 
         0 0,12 * * * /dir/append_csv.sh /var/www/fto-stats.csv
 
-where dir is the directory for `append_csv.sh` AND `scrape_fto.py` 
-To run the script twich per day at 12AM / 12PM
+which runs the script twice per day at 12AM / 12PM
+where `dir` is the directory for `append_csv.sh` AND `scrape_fto.py` 
 
 ### Output
 
