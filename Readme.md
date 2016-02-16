@@ -1,6 +1,6 @@
 Grabs data from faerytailonline webpage for use in a csv in the following format:
 
-    M/DD/YY-HH, Population, Birth Queue Size, Pregnant Mothers
+    MM/DD/YY-HH, Population, Birth Queue Size, Pregnant Mothers
 
 where the time is UTC. HH is in 24 hour format
 
