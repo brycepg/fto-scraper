@@ -44,6 +44,10 @@ A crontab entry might look like
 which runs the script twice per day at 12AM / 12PM
 where `dir` is the directory for `append_csv.sh` AND `scrape_fto.py` 
 
+### truncate_csv.sh
+
+Truncates the result from `append_csv.sh`, to the last 6 months of data to the beginning of the last 6th month. This script is called inside from `append_csv.sh` and creates a csv file with the same name as the output of append_csv in the same directory, with _6months.csv appended to to the end.
+
 ### Output
 
         Date,Population,Birth Queue,Pregnant Mothers
