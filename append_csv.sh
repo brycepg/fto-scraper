@@ -13,6 +13,11 @@ if [ ! -f $output_csv ]; then
         echo "Date,Population,Birth Queue,Pregnant Mothers" >> $output_csv
 fi
 
+if [ -z "$csv_line" ]; then
+    echo "Could not get data from fto server"
+    exit
+fi
+
 echo "$csv_line" >> $output_csv
 
 $script_dir/truncate_csv.sh $output_csv ${output_csv%.csv}_6months.csv 6
