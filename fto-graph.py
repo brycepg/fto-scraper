@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+"""Command-line program to read a fto statistics csv and output a png graph"""
 import argparse
 
 import pandas as pd
@@ -12,10 +13,17 @@ plt.style.use('bmh')
 matplotlib.rcParams.update({'font.size': 22})
 
 def main():
+    """
+    Get arguments from the command-line and pass them into the main function
+    """
     args = parse_args()
     run(args)
 
 def parse_args():
+    """
+    Parses command-line arguments and stuffs them into a namespace
+    Returns the argument-namespace
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('input_csv', help='path to fto statistic CSV')
     parser.add_argument('output_filename', nargs='?', help='output PNG filename', default='output.png')
@@ -23,8 +31,8 @@ def parse_args():
     return args
 
 def run(args):
+    """parse csv, modify dataframe, generate figure, save figure"""
     df = pd.read_csv(args.input_csv)
-
     # Reindex dataframe based on date column
     df.index = pd.to_datetime(df['Date'], format='%m/%d/%y-%H')
 
@@ -32,6 +40,12 @@ def run(args):
     figure.savefig(args.output_filename)
 
 def generate_figure(df):
+    """
+    Takes the fto-data dataframe, plots Population, Birth Queue, and Pregnant
+    Mothers onto a matplotlib figure.
+
+    Returns the genreated matplotlib figure.
+    """
     fig = plt.figure(figsize=(20,15))
 
     # Population
