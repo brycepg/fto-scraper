@@ -58,7 +58,7 @@ and graphs can be applied to the data
 
 # fto-graph.py
 
-Graphs the csv data and outputs an image
+Graphs the csv data and outputs an png of the graph
 
 ## Requirements
 
