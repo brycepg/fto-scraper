@@ -76,7 +76,7 @@ def generate_figure(df):
     # Use lower 1/3 of graph
     ax_lower = plt.subplot2grid((3,1), (2,0), rowspan=1)
     ax_lower.set_ylabel(preg_label)
-    df['Pregnant Mothers'].plot(ax=ax_lower, style='g', clip_on=False, linewidth=5, label=preg_label)
+    df['Pregnant Mothers'].plot(ax=ax_lower, style='g', clip_on=False, linewidth=5)
     # Start pregnant mothers y-axis at 0 even though there might not be 
     # 0 pregnant mothers
     ax_lower.set_ylim(0, ax_lower.get_ylim()[1])
