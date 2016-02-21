@@ -55,3 +55,26 @@ Truncates the result from `append_csv.sh`, to the last 6 months of data to the b
 
 Once the csv is accessable via http, it can be linked into a google doc, 
 and graphs can be applied to the data
+
+# fto-graph.py
+
+Graphs the csv data and outputs an image
+
+## Requirements
+
+    matplotlib
+    pandas
+
+## Installation
+
+    sudo apt-get install libfreetype6-dev python3-dev
+    sudo pip install matplotlib pandas
+    (wait forever while it compiles)
+
+## Usage
+
+    ./fto-graph.py example/fto-stats.csv output.png
+
+## Output
+
+![Image of output graph](example/output.png)
