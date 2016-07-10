@@ -94,14 +94,13 @@ def generate_figure(df):
     ax_lower = plt.subplot2grid((3, 1), (2, 0), rowspan=1)
     ax_lower.set_ylabel(preg_label)
     ax_lower.plot(df['Pregnant Mothers'], color='g', clip_on=False, linewidth=5)
+
     # Start pregnant mothers y-axis at 0 even though there might not be
     # 0 pregnant mothers
     ax_lower.set_ylim(0, ax_lower.get_ylim()[1])
 
     # Beautiful magic to format the date xticks
     fig.autofmt_xdate()
-
-    #plt.setp(ax.xaxis.get_majorticklabels(), rotation=9)
 
     # Y tick marks
     # For some reason matplotlib decided pregnant mothers needs floating point
@@ -111,9 +110,6 @@ def generate_figure(df):
     for each in locs:
             yint.append(int(each))
             plt.yticks(yint)
-
-    # Legend
-    # Use top axis to generate the top subplot graph using the proper artists
 
     return fig
 
