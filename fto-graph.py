@@ -33,7 +33,7 @@ def parse_args():
 
 def run(args):
     """parse csv, modify dataframe, generate figure, save figure"""
-    df = pd.read_csv(args.input_csv)
+    df = pd.read_csv(args.input_csv, names=['Date', 'Birth Queue', 'Population', 'Pregnant Mothers'])
     # Reindex dataframe based on date column
     df.index = pd.to_datetime(df['Date'], format='%m/%d/%y-%H')
 
@@ -78,7 +78,7 @@ def generate_figure(df):
     ax_lower = plt.subplot2grid((3,1), (2,0), rowspan=1)
     ax_lower.set_ylabel(preg_label)
     df['Pregnant Mothers'].plot(ax=ax_lower, style='g', clip_on=False, linewidth=5)
-    # Start pregnant mothers y-axis at 0 even though there might not be 
+    # Start pregnant mothers y-axis at 0 even though there might not be
     # 0 pregnant mothers
     ax_lower.set_ylim(0, ax_lower.get_ylim()[1])
 
@@ -90,7 +90,7 @@ def generate_figure(df):
     for each in locs:
             yint.append(int(each))
             plt.yticks(yint)
-            
+
     # Legend
     # Use top axis to generate the top subplot graph using the proper artists
     ax.legend(loc='upper center',handles=[blue_line, reds_line])
