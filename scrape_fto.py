@@ -49,7 +49,7 @@ def get_pregnant_mothers(soup):
 
 def csv_format_time():
     """Get time in correct format for google docs"""
-    return time.strftime("%D-%H", time.gmtime())
+    return time.strftime("%m/%d/%y-%H", time.gmtime())
 
 if __name__ == "__main__":
     main()
