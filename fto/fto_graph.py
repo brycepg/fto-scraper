@@ -10,11 +10,9 @@ from operator import itemgetter
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
-# Removes dependency on graphical system
-matplotlib.use('Agg')
 
-plt.style.use('bmh')
-matplotlib.rcParams.update({'font.size': 22})
+__all__ = ['main', 'generate_figure', 'load_dataframe']
+
 
 # Convention
 # pylint: disable=invalid-name
@@ -45,6 +43,9 @@ class InvalidCSVError(Error):
 
 
 def main():
+    matplotlib.use('Agg')
+    # Removes dependency on graphical system
+    plt.style.use('bmh')
     """Feed command-line argument dict into service."""
     logging.basicConfig(level=logging.INFO)
 
@@ -119,6 +120,8 @@ def run(vargs):
 def load_dataframe(csv_path):
     """Load pd.DataFrame from csv at `csv_path` on the filesystem.
 
+    The first column should be the Date column.
+
     Args:
         csv_path(str): Path to existing csv on filesystem
 
@@ -163,6 +166,10 @@ def load_dataframe(csv_path):
     # Reindex dataframe based on date column
     df.index = pd.to_datetime(df['Date'], format='%m/%d/%y-%H')
     del df["Date"]
+
+    # There is a bug where the number of pregnant mothers is thrown off by one
+    if df["Pregnant Mothers"].min() == 1:
+        df["Pregnant Mothers"] = df["Pregnant Mothers"] - 1
     return df
 
 
@@ -196,6 +203,7 @@ def generate_figure(df):
     Returns:
         The generated matplotlib figure.
     """
+    matplotlib.rcParams.update({'font.size': 22})
     fig = plt.figure(figsize=(20, 15))
 
     # Population
@@ -215,7 +223,7 @@ def generate_figure(df):
     ax_secondary.plot(df['Birth Queue'],
                       color=birth_queue_color, clip_on=False, linewidth=5)
 
-    # Pregnant mothers
+    # Pregnant Mothers
     preg_label = "Pregnant Mothers"
     # Use lower 1/3 of graph
     ax_lower = plt.subplot2grid((3, 1), (2, 0), rowspan=1)
@@ -227,18 +235,14 @@ def generate_figure(df):
     # 0 pregnant mothers
     ax_lower.set_ylim(0, ax_lower.get_ylim()[1])
 
-    # Beautiful magic to format the date xticks
+    # Autotilt dates
     fig.autofmt_xdate()
 
-    # Y tick marks
-    # For some reason matplotlib decided pregnant mothers needs floating point
-    # y tick marks - make them ints again
-    # XXX test fixing this section
-    yint = []
-    locs, labels = plt.yticks()
-    for each in locs:
-        yint.append(int(each))
-        plt.yticks(yint)
+    # Remove 'half' mother labels which don't make sense
+    # and 0 mother label which collides with the date formatting.
+    tick_labels = ["" if not tick.is_integer() or tick == 0 else int(tick)
+                   for tick in ax_lower.get_yticks()]
+    ax_lower.set_yticklabels(tick_labels)
 
     return fig
 
