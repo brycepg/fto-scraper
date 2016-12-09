@@ -6,10 +6,18 @@ import errno
 import logging
 import sys
 from operator import itemgetter
+import io
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+
 
 import pandas as pd
-import matplotlib.pyplot as plt
+import requests
 import matplotlib
+matplotlib.use('Agg')  # The backend choice must be called before pyplot import
+import matplotlib.pyplot as plt
 
 __all__ = ['main', 'generate_figure', 'load_dataframe']
 
@@ -43,7 +51,6 @@ class InvalidCSVError(Error):
 
 
 def main():
-    matplotlib.use('Agg')
     # Removes dependency on graphical system
     plt.style.use('bmh')
     """Feed command-line argument dict into service."""
@@ -54,7 +61,7 @@ def main():
         logging.getLogger().setLevel(level=logging.DEBUG)
         log.setLevel(level=logging.DEBUG)
     try:
-        run(vargs)
+        run(**vargs)
     except KeyboardInterrupt as e:
         log.debug(e, stack_info=True)
         log.info("Keyboard Cancelled operation")
@@ -99,21 +106,24 @@ def get_mapped_vals(data_dict, keys):
     return values
 
 
-def run(vargs):
+def run(input_csv, output_filename=None, verbose=False):
     """parse csv, modify dataframe, generate figure, save figure.
 
     Args:
-        vargs(dict): A dictionary of arguments to this function.
+        input_csv(str): The input csv to read from. May be a filesystem path
+            or a http/https url.
+        output_filename(str|None): Relative or absolute
+            path for the figure output file.
+            If Falsy, only return figure, do not write to file. Default: None
+        verbose(bool): If true, also log debug output to stdout. Default: False
 
-    Side effects:
-        saves figure at `args['output_filename']`
     Returns:
         A copy of the figure
     """
-
-    df = load_dataframe(vargs['input_csv'])
+    df = load_dataframe(input_csv)
     figure = generate_figure(df)
-    figure.savefig(vargs['output_filename'])
+    if output_filename:
+        figure.savefig(output_filename)
     return figure
 
 
@@ -124,6 +134,7 @@ def load_dataframe(csv_path):
 
     Args:
         csv_path(str): Path to existing csv on filesystem
+            or a csv resource via http or https
 
     Returns:
         A `pd.DataFrame` with the column names 'Birth Queue',
@@ -137,8 +148,14 @@ def load_dataframe(csv_path):
     """
     columns = ['Date', 'Birth Queue', 'Population', 'Pregnant Mothers']
     line = ""
+    parse_result = urlparse(csv_path)
     try:
-        with open(csv_path) as csv_fh:
+        if parse_result.scheme in ["http", "https"]:
+            response = requests.get(csv_path)
+            csv_fh = io.StringIO(response.text)
+        else:
+            csv_fh = open(csv_path)
+        with csv_fh:
             line = csv_fh.readline()
             names = None if substrs_in_line(columns, line) else columns
             csv_fh.seek(0)
