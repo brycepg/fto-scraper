@@ -114,7 +114,7 @@ def run(input_csv, output_filename=None, verbose=False):
     """parse csv, modify dataframe, generate figure, save figure.
 
     Args:
-        input_csv(str): The input csv to read from. May be a filesystem path
+        input_csv(str|fh): The input csv to read from. May be a filesystem path
             or a http/https url.
         output_filename(str|None): Relative or absolute
             path for the figure output file.
@@ -131,14 +131,15 @@ def run(input_csv, output_filename=None, verbose=False):
     return figure
 
 
-def load_dataframe(csv_path):
+def load_dataframe(csv_path_or_buffer):
     """Load pd.DataFrame from csv at `csv_path` on the filesystem.
 
     The first column should be the Date column.
 
     Args:
-        csv_path(str): Path to existing csv on filesystem
-            or a csv resource via http or https
+        csv_path_or_buffer(str): Path to existing csv on filesystem
+            or a csv resource via http or https. Alternatively
+            it can to a file-like object which implements read.
 
     Returns:
         A `pd.DataFrame` with the column names 'Birth Queue',
@@ -152,13 +153,19 @@ def load_dataframe(csv_path):
     """
     columns = ['Date', 'Birth Queue', 'Population', 'Pregnant Mothers']
     line = ""
-    parse_result = urlparse(csv_path)
+    if hasattr(csv_path_or_buffer, "read"):
+        is_fh = True
+    else:
+        is_fh = False
+        parse_result = urlparse(csv_path_or_buffer)
     try:
-        if parse_result.scheme in ["http", "https"]:
-            response = requests.get(csv_path)
+        if is_fh:
+            csv_fh = csv_path_or_buffer
+        elif parse_result.scheme in ["http", "https"]:
+            response = requests.get(csv_path_or_buffer)
             csv_fh = io.StringIO(response.text)
         else:
-            csv_fh = open(csv_path)
+            csv_fh = open(csv_path_or_buffer)
         with csv_fh:
             line = csv_fh.readline()
             names = None if substrs_in_line(columns, line) else columns
@@ -172,26 +179,51 @@ def load_dataframe(csv_path):
     except (OSError, IOError) as e:
         if e.errno == errno.ENOENT:
             raise CSVNotFoundError(
-                "Could not find csv at %s" % csv_path, e.errno)
+                "Could not find csv at %s" % csv_path_or_buffer, e.errno)
         else:
             raise CSVNotReadError(
-                "Could not retrieve data from csv %s" % csv_path, e.errno)
+                "Could not retrieve data from csv %s"
+                % csv_path_or_buffer, e.errno)
 
+    verify_dataframe(df, columns)
+    df_adjusted = adjust_from_csv(df)
+    return df_adjusted
+
+
+def adjust_from_csv(fto_df):
+    """Adjust the fto Dataframe format from csv.
+
+    - Index by the Date column
+    - Delete the Date column
+    - Adjust Pregnant Mother count due to bug
+
+    Returns:
+        A new dataframe with the above changes.
+    """
+    dates = fto_df['Date']
+    new_df = fto_df.drop("Date", axis=1)
+    # Reindex dataframe based on date column
+    new_df.index = pd.to_datetime(dates, format='%m/%d/%y-%H')
+    # There is a bug where the number of pregnant mothers is thrown off by one
+    if new_df["Pregnant Mothers"].min() == 1:
+        new_df["Pregnant Mothers"] = (new_df["Pregnant Mothers"] - 1)
+    return new_df
+
+
+def verify_dataframe(fto_df, columns):
+    """Verify that the input dataframe has the expected columns.
+
+    Raises:
+        InvalidCSVError if `fto_df` doesn't have the
+            "Date", "Birth Queue", "Population", and "Pregnant Mothers" columns
+        """
     # Data verification
     for col in columns:
-        # Pylint is confused by df.columns
+        # Pylint is confused by fto_df.columns
         # pylint: disable=no-member
-        if col not in df.columns:
-            raise InvalidCSVError("Column '%s' not present in input csv %s "
-                                  "but should be" % (col, csv_path))
-    # Reindex dataframe based on date column
-    df.index = pd.to_datetime(df['Date'], format='%m/%d/%y-%H')
-    del df["Date"]
-
-    # There is a bug where the number of pregnant mothers is thrown off by one
-    if df["Pregnant Mothers"].min() == 1:
-        df["Pregnant Mothers"] = df["Pregnant Mothers"] - 1
-    return df
+        if col not in fto_df.columns:
+            raise InvalidCSVError(
+                "Column '%s' not present in input csv but should be" % (col))
 
 
 def substrs_in_line(items, line):
