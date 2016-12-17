@@ -16,7 +16,11 @@ except ImportError:
 import pandas as pd
 import requests
 import matplotlib
-matplotlib.use('Agg')  # The backend choice must be called before pyplot import
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    # The backend choice must be called before pyplot import
+    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 __all__ = ['main', 'generate_figure', 'load_dataframe']
