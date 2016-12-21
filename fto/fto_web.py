@@ -8,7 +8,6 @@ on the HTML canvas.
 from typing import IO, Union, AnyStr
 import bokeh
 import bokeh.mpl
-import bokeh.plotting
 import bokeh.io
 import bokeh.models.plots
 import bokeh.plotting
