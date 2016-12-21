@@ -2,3 +2,10 @@ matplotlib
 pandas
 requests
 bs4
+typing
+
+# Only required when importing fto_web
+bokeh
+
+# Only required when importing stats
+attrs
