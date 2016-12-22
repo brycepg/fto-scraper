@@ -5,7 +5,11 @@ on the HTML canvas.
 
 """
 
-from typing import IO, Union, AnyStr
+import argparse
+
+
+# pylint: disable=unused-import
+from typing import IO, Union, AnyStr  # NOQA
 import bokeh
 import bokeh.mpl
 import bokeh.io
@@ -20,10 +24,27 @@ from bokeh.models import HoverTool
 from bokeh.palettes import Set1_3
 from bokeh.plotting import figure
 import pandas as pd
+import attr
 
 from . import load_dataframe
 
-IO, Union, AnyStr # Only used in typing comments
+
+def main():
+    """Cli interface to show resultant graph in browser."""
+    # type () -> None
+    vargs = parse_args()
+    layout = run(**vargs)
+    bokeh.plotting.show(layout)
+
+
+def parse_args():
+    """Generate args for cli-interface."""
+    # type: () -> dict[str, Any]
+    parser = argparse.ArgumentParser(
+        "Generate interactive web graph for fto data.")
+    parser.add_argument(metavar="csv_path", dest="csv_path_or_df",
+                        help="url or file system path to csv source data.")
+    return vars(parser.parse_args())
 
 
 def run(csv_path_or_df):
@@ -44,7 +65,7 @@ def run(csv_path_or_df):
         fto_df = load_dataframe(csv_path_or_df)
 
     if "Date Formatted" not in fto_df.columns:
-            fto_df["Date Formatted"] = format_bokeh_date(fto_df)
+        fto_df["Date Formatted"] = format_bokeh_date(fto_df)
     layout = generate_bokeh_layout(fto_df)
 
     # It is in fact an iterable
@@ -61,8 +82,9 @@ def generate_bokeh_layout(fto_df):
     pop_color, birth_color, mother_color = Set1_3
     source = bokeh.models.ColumnDataSource(fto_df)
     mother_fig = generate_mother_figure(fto_df, source, mother_color, width)
-    top_fig = generate_top_figure(
-        fto_df, mother_fig, source, pop_color, birth_color, width)
+
+    fig_options = TopFigOptions(pop_color, birth_color, width)
+    top_fig = generate_top_figure(fto_df, mother_fig, source, fig_options)
     header = bokeh.models.Div(text="<h1>FTO Hourly Statistics</h1>")
     column = bokeh.layouts.column([header, top_fig, mother_fig])
 
@@ -73,7 +95,7 @@ def generate_mother_figure(fto_df,        # type: pd.DataFrame
                            source,        # type: ColumnDataSource
                            mother_color,  # type: str
                            width          # type: int
-                           ):
+                           ):  # pylint: disable=bad-continuation
                         # type: (...) -> bokeh.models.figure.Figure
     """Generate the bottom part of the bokeh layout."""
     mother_y_range = Range1d(
@@ -95,10 +117,8 @@ def generate_mother_figure(fto_df,        # type: pd.DataFrame
 def generate_top_figure(fto_df,       # type: pd.DataFrame
                         mother_fig,   # type: bokeh.models.figure.Figure
                         source,       # type: ColumnDataSource
-                        pop_color,    # type: str
-                        birth_color,  # type: str
-                        width         # type: int
-                        ):
+                        options,      # type: TopFigOptions
+                        ):  # pylint: disable=bad-continuation
                         # type (...) -> bokeh.models.figure.Figure
     """Generate the top portion figure for population and birth queue.
 
@@ -113,15 +133,15 @@ def generate_top_figure(fto_df,       # type: pd.DataFrame
     Returns:
         The generated figure
     """
-    TOOLS = "pan,xbox_zoom,reset"
+    tools = "pan,xbox_zoom,reset"
     pop_name = "population"
     birth_queue_name = "Birth Queue"
     x_axis_name = "Date"
     birth_queue = fto_df[birth_queue_name]
     population = fto_df.Population
     fig_props = {
-        'width': width,
-        'tools': TOOLS,
+        'width': options.width,
+        'tools': tools,
         'active_drag': 'xbox_zoom',
     }
     line_props = {
@@ -135,18 +155,17 @@ def generate_top_figure(fto_df,       # type: pd.DataFrame
         x_range=mother_fig.x_range, y_axis_label=birth_queue_name,
         y_range=top_fig_range, **fig_props)
     top_fig.line(
-        x_axis_name, birth_queue_name, color=birth_color, **line_props)
-
-    top_fig.yaxis.axis_label_text_color=birth_color
+        x_axis_name, birth_queue_name, color=options.birth_color, **line_props)
+    top_fig.yaxis.axis_label_text_color = options.birth_color
     pop_range = Range1d(
         start=population.min(), end=population.max(), bounds="auto")
     top_fig.extra_y_ranges = {pop_name: pop_range}
     pop_renderer = top_fig.line(
         x_axis_name, pop_name.capitalize(), y_range_name=pop_name,
-        color=pop_color, **line_props)
+        color=options.pop_color, **line_props)
     population_axis = LinearAxis(y_range_name=pop_name,
                                  axis_label=pop_name.capitalize(),
-                                 axis_label_text_color=pop_color)
+                                 axis_label_text_color=options.pop_color)
     top_fig.add_layout(population_axis, 'left',)
     top_fig.yaxis.axis_label_text_font_size = '16pt'
     top_fig.yaxis.axis_label_text_font_style = 'bold'
@@ -230,3 +249,17 @@ def format_bokeh_date(fto_df):
     else:
         series = fto_df.index.strftime(date_format)
     return series
+
+
+# This class is a record-type class
+# pylint: disable=too-few-public-methods
+@attr.s
+class TopFigOptions(object):
+    """Options for top_figure"""
+    pop_color = attr.ib()
+    birth_color = attr.ib()
+    width = attr.ib()
+
+
+if __name__ == "__main__":
+    main()

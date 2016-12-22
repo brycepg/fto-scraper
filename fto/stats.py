@@ -1,12 +1,16 @@
-"""Generating Statistics from fto data."""
+"""Generating Statistics from fto data.
+
+TODO
+    - group by day instead of month initially since months
+        do not have a uniform amount of time.i
+"""
 
 import datetime
 
+# pylint: disable=unused-import
 from typing import Tuple, Iterable, Iterator
 import attr
 import pandas as pd
-
-Tuple, Iterable, Iterator  # Only used in typing comments
 
 
 def generate_monthly_dataframe(fto_df):
@@ -28,19 +32,19 @@ def generate_monthly_dataframe(fto_df):
         since a birth and a death can cancel out. The given data is the lower
         bound.
     """
-    population_delta = delta(fto_df["Population"])
-    mother_delta = delta(fto_df["Pregnant Mothers"])
+    population_delta = create_delta(fto_df["Population"])
+    mother_delta = create_delta(fto_df["Pregnant Mothers"])
     deltas = (
-        (population_delta[population_delta > 0],       "Births"),
+        (population_delta[population_delta > 0], "Births"),
         (population_delta[population_delta < 0].abs(), "Deaths"),
-        (mother_delta[mother_delta > 0],               "Pregnancies"),
+        (mother_delta[mother_delta > 0], "Pregnancies"),
     )
     monthly_series = (process_delta(*args) for args in deltas)
     monthly_df = pd.concat(monthly_series, axis=1).reset_index()
     return monthly_df
 
 
-def delta(series):
+def create_delta(series):
     # type: (pd.Series) -> pd.Series
     """Create delta of the given series
 

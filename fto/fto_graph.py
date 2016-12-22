@@ -7,16 +7,18 @@ import logging
 import sys
 from operator import itemgetter
 import io
+import warnings
 try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse
 
 
+# pylint: disable=unused-import
+from typing import Iterable, Hashable, Any, Union, IO, Optional # NOQA
 import pandas as pd
 import requests
 import matplotlib
-import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     # The backend choice must be called before pyplot import
@@ -26,7 +28,6 @@ import matplotlib.pyplot as plt
 __all__ = ['main', 'generate_figure', 'load_dataframe']
 
 
-# Convention
 # pylint: disable=invalid-name
 log = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class Error(Exception):
 class CSVNotReadError(Error):
     """Error for failing to retrieve data from `input_csv`"""
     def __init__(self, msg, errno_):
+        # type: (str, int) -> None
         super(CSVNotReadError, self).__init__(msg)
         self.msg = msg
         self.errno = errno_
@@ -55,15 +57,13 @@ class InvalidCSVError(Error):
 
 
 def main():
+    # () -> None
+    """Cli interface to this module"""
     # Removes dependency on graphical system
     plt.style.use('bmh')
-    """Feed command-line argument dict into service."""
     logging.basicConfig(level=logging.INFO)
 
     vargs = vars(parse_args())
-    if vargs['verbose']:
-        logging.getLogger().setLevel(level=logging.DEBUG)
-        log.setLevel(level=logging.DEBUG)
     try:
         run(**vargs)
     except KeyboardInterrupt as e:
@@ -78,6 +78,7 @@ def main():
 
 
 def parse_args():
+    # () -> argparse.Namespace
     """Parses command-line arguments and stuffs them into a namespace.
 
     Returns a argparse.Namespace of arguments
@@ -95,6 +96,7 @@ def parse_args():
 
 
 def get_mapped_vals(data_dict, keys):
+    # type: (dict, Iterable[Hashable]) -> List[Any]
     """Get the data from each key in `keys` from `data_dict`.
 
     Args:
@@ -110,7 +112,11 @@ def get_mapped_vals(data_dict, keys):
     return values
 
 
-def run(input_csv, output_filename=None, verbose=False):
+def run(input_csv,             # type: Union[str, IO]
+        output_filename=None,  # type: Optional[str]
+        verbose=False          # type: bool
+        ):  # pylint: disable=bad-continuation
+    # type: (...) -> plt.Figure
     """parse csv, modify dataframe, generate figure, save figure.
 
     Args:
@@ -124,6 +130,9 @@ def run(input_csv, output_filename=None, verbose=False):
     Returns:
         A copy of the figure
     """
+    if verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+        log.setLevel(logging.DEBUG)
     df = load_dataframe(input_csv)
     figure = generate_figure(df)
     if output_filename:
@@ -132,6 +141,7 @@ def run(input_csv, output_filename=None, verbose=False):
 
 
 def load_dataframe(csv_path_or_buffer):
+    # type: (Union[str, IO]) -> pd.DataFrame
     """Load pd.DataFrame from csv at `csv_path` on the filesystem.
 
     The first column should be the Date column.
@@ -153,19 +163,23 @@ def load_dataframe(csv_path_or_buffer):
     """
     columns = ['Date', 'Birth Queue', 'Population', 'Pregnant Mothers']
     line = ""
-    if hasattr(csv_path_or_buffer, "read"):
-        is_fh = True
+    csv_path = None  # type: Optional[str]
+    csv_fh = None  # type: Optional[IO]
+    if isinstance(csv_path_or_buffer, str):
+        csv_path = csv_path_or_buffer
+        parse_result = urlparse(csv_path)
+    elif hasattr(csv_path_or_buffer, "readline"):
+        csv_fh = csv_path_or_buffer
     else:
-        is_fh = False
-        parse_result = urlparse(csv_path_or_buffer)
+        raise ValueError(
+            "csv_path_or_buffer must be str or IO object, but got {}"
+            .format(type(csv_path_or_buffer).__name__))
     try:
-        if is_fh:
-            csv_fh = csv_path_or_buffer
-        elif parse_result.scheme in ["http", "https"]:
-            response = requests.get(csv_path_or_buffer)
+        if csv_path is not None and parse_result.scheme in ["http", "https"]:
+            response = requests.get(csv_path)
             csv_fh = io.StringIO(response.text)
-        else:
-            csv_fh = open(csv_path_or_buffer)
+        if csv_path is not None:
+            csv_fh = open(csv_path)
         with csv_fh:
             line = csv_fh.readline()
             names = None if substrs_in_line(columns, line) else columns
@@ -191,6 +205,7 @@ def load_dataframe(csv_path_or_buffer):
 
 
 def adjust_from_csv(fto_df):
+    # type: (pd.DataFrame) -> pd.DataFrame
     """Adjust the fto Dataframe format from csv.
 
     - Index by the Date column
@@ -211,6 +226,7 @@ def adjust_from_csv(fto_df):
 
 
 def verify_dataframe(fto_df, columns):
+    # type: (pd.DataFrame, Iterable[str]) -> None
     """Verify that the input dataframe has the expected columns.
 
     Raises:
@@ -227,6 +243,7 @@ def verify_dataframe(fto_df, columns):
 
 
 def substrs_in_line(items, line):
+    # type: (Iterable[str], str) -> bool
     """Returns True if `line` contains any item from `items` else False.
 
     Args:
@@ -242,6 +259,7 @@ def substrs_in_line(items, line):
 
 
 def generate_figure(df):
+    # type: (pd.DataFrame) -> plt.Figure
     """Generates a matplotlib.figure.Figure from `df`.
 
     Takes the fto-data dataframe, plots Population, Birth Queue, and Pregnant
