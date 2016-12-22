@@ -178,7 +178,7 @@ def load_dataframe(csv_path_or_buffer):
         if csv_path is not None and parse_result.scheme in ["http", "https"]:
             response = requests.get(csv_path)
             csv_fh = io.StringIO(response.text)
-        if csv_path is not None:
+        elif csv_path is not None:
             csv_fh = open(csv_path)
         with csv_fh:
             line = csv_fh.readline()
@@ -191,6 +191,7 @@ def load_dataframe(csv_path_or_buffer):
             # with column names.
             df = pd.read_csv(csv_fh, names=names)
     except (OSError, IOError) as e:
+        log.debug(e)
         if e.errno == errno.ENOENT:
             raise CSVNotFoundError(
                 "Could not find csv at %s" % csv_path_or_buffer, e.errno)
