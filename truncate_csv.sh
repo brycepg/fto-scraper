@@ -15,7 +15,7 @@ head -n 1 $full_csv > $short_csv
 
 # Take lines from the end until the threshold is passed.
 threshold=$(( 12 * 10#$(date -u +%y) + 10#$(date -u +%m) - $limit ))
-tac $full_csv | while read -r line; do
+tac $full_csv | cat 2>/dev/null | while read -r line; do
     # MM/DD/YY-HH
     if ! [[ "$line" =~ [0-9]{2}/[0-9]{2}/[0-9]{2}-[0-9]{2} ]]; then break; fi
     if (( 12 * 10#${line:6:2} + 10#${line:0:2} <= threshold )); then break; fi
